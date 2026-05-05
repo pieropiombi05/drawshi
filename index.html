@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelMemory - Juego de Memorización y Dibujo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           CONTENEDOR PRINCIPAL Y VISTAS
+           ============================================ */
+        .app-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+        }
+
+        .screen.show {
+            opacity: 1;
+            visibility: visible;
+            position: relative;
+        }
+
+        /* ============================================
+           PANTALLA DE INICIO
+           ============================================ */
+        #homeScreen {
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .game-title {
+            text-align: center;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        .game-title h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff 0%, #b700ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            letter-spacing: 3px;
+        }
+
+        .game-title p {
+            font-size: 1.1rem;
+            color: #00d4ff;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 300px;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #b700ff 0%, #7d00b7 100%);
+            color: #e0e0e0;
+            border-color: #b700ff;
+            box-shadow: 0 0 20px rgba(183, 0, 255, 0.5);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(183, 0, 255, 0.8);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* ============================================
+           PANTALLA DE MEMORIZACIÓN
+           ============================================ */
+        #memoryScreen {
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .memory-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .screen-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #00d4ff;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .image-display {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
+            border: 3px solid #b700ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(183, 0, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .image-display img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-placeholder {
+            font-size: 1rem;
+            color: #666;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .countdown-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .countdown-label {
+            font-size: 0.9rem;
+            color: #00d4ff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .countdown {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff 0%, #b700ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.2);
+            animation: countdownPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes countdownPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            }
+            50% {
+                text-shadow: 0 0 40px rgba(183, 0, 255, 0.5);
+            }
+        }
+
+        /* ============================================
+           PANTALLA DE DIBUJO
+           ============================================ */
+        #drawScreen {
+            flex-direction: column;
+            gap: 25px;
+            background: rgba(26, 26, 46, 0.8);
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid #b700ff;
+            box-shadow: 0 0 30px rgba(183, 0, 255, 0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .draw-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(45, 45, 68, 0.6);
+            border-radius: 8px;
+            border: 1px solid #00d4ff;
+            width: 100%;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-label {
+            font-size: 0.85rem;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .color-picker {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #00d4ff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .color-picker:hover {
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        .brush-slider {
+            width: 150px;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #00d4ff 0%, #b700ff 100%);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .brush-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .brush-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+        }
+
+        .brush-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .brush-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+        }
+
+        .brush-value {
+            color: #b700ff;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .btn-secondary-small {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            background: linear-gradient(135deg, #b700ff 0%, #7d00b7 100%);
+            color: #e0e0e0;
+            border: 2px solid #b700ff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .btn-secondary-small:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(183, 0, 255, 0.6);
+        }
+
+        #canvas {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            background: #0a0a1a;
+            border: 3px solid #00d4ff;
+            border-radius: 8px;
+            cursor: crosshair;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.05);
+        }
+
+        .button-group-draw {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ============================================
+           PANTALLA DE RESULTADOS
+           ============================================ */
+        #resultsScreen {
+            flex-direction: column;
+            gap: 50px;
+        }
+
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            text-align: center;
+        }
+
+        .results-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #b700ff;
+            letter-spacing: 2px;
+        }
+
+        .score-box {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff 0%, #b700ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.5), 0 0 30px rgba(183, 0, 255, 0.5);
+            animation: floatAnimation 3s ease-in-out infinite;
+        }
+
+        @keyframes floatAnimation {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: rgba(26, 26, 46, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .score-value {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            line-height: 1;
+        }
+
+        .percentage-label {
+            font-size: 1rem;
+            color: #1a1a2e;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* ============================================
+           RESPONSIVE DESIGN
+           ============================================ */
+        @media (max-width: 768px) {
+            #homeScreen {
+                gap: 40px;
+            }
+
+            .game-title h1 {
+                font-size: 2.5rem;
+            }
+
+            .button-group {
+                min-width: 250px;
+            }
+
+            .btn {
+                padding: 14px 28px;
+                font-size: 1rem;
+            }
+
+            #drawScreen {
+                padding: 20px;
+                max-width: 100%;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .toolbar-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .score-box {
+                width: 160px;
+                height: 160px;
+            }
+
+            .score-value {
+                font-size: 3rem;
+            }
+
+            .results-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            html, body {
+                overflow-y: auto;
+            }
+
+            .app-container {
+                min-height: 100vh;
+            }
+
+            .screen {
+                min-height: 100vh;
+                position: relative;
+            }
+
+            .game-title h1 {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                min-width: 100%;
+                max-width: 90vw;
+            }
+
+            #drawScreen {
+                max-width: 95vw;
+                padding: 15px;
+            }
+
+            .toolbar {
+                padding: 15px;
+                gap: 12px;
+            }
+
+            .toolbar-group {
+                width: 100%;
+            }
+
+            .brush-slider {
+                width: 120px;
+            }
+
+            .color-picker {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- PANTALLA 1: INICIO -->
+        <div id="homeScreen" class="screen show">
+            <div class="game-title">
+                <h1>PIXELMEMORY</h1>
+                <p>Memoriza & Dibuja</p>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="startGame('casual')">
+                    🎮 Jugar Casual
+                </button>
+                <button class="btn btn-secondary" onclick="startGame('competitive')">
+                    ⚔️ Jugar Competitivo
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 2: MEMORIZACIÓN -->
+        <div id="memoryScreen" class="screen">
+            <div class="memory-container">
+                <h2 class="screen-title">Memoriza la imagen</h2>
+                <div class="image-display">
+                    <div class="image-placeholder">
+                        📷 Imagen Target
+                    </div>
+                </div>
+                <div class="countdown-container">
+                    <div class="countdown-label">Tiempo Restante</div>
+                    <div class="countdown" id="countdownTimer">5</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 3: DIBUJO -->
+        <div id="drawScreen" class="screen">
+            <h2 class="screen-title">Dibuja lo que memorizaste</h2>
+            <div class="draw-container">
+                <div class="toolbar">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Color</span>
+                        <input type="color" id="colorPicker" class="color-picker" value="#00d4ff">
+                    </div>
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Grosor</span>
+                        <input type="range" id="brushSlider" class="brush-slider" min="1" max="50" value="5">
+                        <span class="brush-value"><span id="brushValue">5</span>px</span>
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="btn-secondary-small" onclick="clearCanvas()">
+                            🗑️ Borrar
+                        </button>
+                    </div>
+                </div>
+                <canvas id="canvas" width="400" height="400"></canvas>
+                <div class="button-group-draw">
+                    <button class="btn btn-secondary" onclick="submitDrawing()">
+                        ✅ Listo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANTALLA 4: RESULTADOS -->
+        <div id="resultsScreen" class="screen">
+            <div class="results-container">
+                <h2 class="results-title">¡RESULTADOS!</h2>
+                <div class="score-box">
+                    <div class="score-label">Score</div>
+                    <div class="score-value" id="scoreValue">00</div>
+                    <div class="percentage-label" id="scorePercentage">0%</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="goToHome()">
+                🔄 Jugar de Nuevo
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // SISTEMA DE NAVEGACIÓN ENTRE PANTALLAS
+        // ============================================
+        function showScreen(screenId) {
+            // Ocultar todas las pantallas
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('show');
+            });
+
+            // Mostrar la pantalla seleccionada
+            const selectedScreen = document.getElementById(screenId);
+            if (selectedScreen) {
+                selectedScreen.classList.add('show');
+            }
+        }
+
+        // ============================================
+        // FUNCIONES DE NAVEGACIÓN
+        // ============================================
+        function goToHome() {
+            showScreen('homeScreen');
+        }
+
+        function startGame(gameMode) {
+            console.log(`Iniciando juego en modo: ${gameMode}`);
+            // TODO: Asignar el modo de juego a una variable global
+            window.currentGameMode = gameMode;
+            showScreen('memoryScreen');
+            startCountdown();
+        }
+
+        function goToDrawScreen() {
+            showScreen('drawScreen');
+        }
+
+        function goToResults() {
+            showScreen('resultsScreen');
+        }
+
+        // ============================================
+        // FUNCIONES DEL COUNTDOWN
+        // ============================================
+        function startCountdown() {
+            let count = 5;
+            const countdownElement = document.getElementById('countdownTimer');
+            
+            countdownElement.textContent = count;
+
+            const countdownInterval = setInterval(() => {
+                count--;
+                countdownElement.textContent = count;
+
+                if (count <= 0) {
+                    clearInterval(countdownInterval);
+                    goToDrawScreen();
+                }
+            }, 1000);
+        }
+
+        // ============================================
+        // FUNCIONES DE CANVAS (DIBUJO)
+        // ============================================
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSlider = document.getElementById('brushSlider');
+        const brushValue = document.getElementById('brushValue');
+
+        let isDrawing = false;
+
+        // Ajustar el tamaño real del canvas
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        // Inicializar canvas
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Actualizar valor del slider de grosor
+        brushSlider.addEventListener('input', (e) => {
+            brushValue.textContent = e.target.value;
+        });
+
+        // Eventos del mouse para dibujar
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            ctx.strokeStyle = colorPicker.value;
+            ctx.lineWidth = brushSlider.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
+
+        // Soporte para touch (mobile)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            ctx.strokeStyle = colorPicker.value;
+            ctx.lineWidth = brushSlider.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDrawing = false;
+        });
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function submitDrawing() {
+            console.log('Dibujo enviado');
+            // TODO: Implementar lógica de comparación de dibujo con imagen target
+            // TODO: Calcular score basado en similitud
+            displayResults(75); // Score placeholder
+        }
+
+        // ============================================
+        // FUNCIÓN DE RESULTADOS
+        // ============================================
+        function displayResults(score) {
+            document.getElementById('scoreValue').textContent = String(score).padStart(2, '0');
+            document.getElementById('scorePercentage').textContent = score + '%';
+            goToResults();
+        }
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        console.log('PixelMemory - Listo para jugar 🎮');
+    </script>
+</body>
+</html>
